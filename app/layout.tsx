@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -65,8 +66,33 @@ export default function RootLayout({
                 <link rel="canonical" href="https://polisimuda.com" />
                 <meta name="theme-color" content="#1e40af" />
                 <meta name="google-site-verification" content="" />
-                {/* Meta Pixel Code */}
                 <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "EducationalOrganization",
+                            "name": "Polisimuda",
+                            "description": "Platform tryout online terpercaya untuk persiapan tes masuk Polisi dan Bintara Polri",
+                            "url": "https://polisimuda.com",
+                            "sameAs": [],
+                            "offers": {
+                                "@type": "Offer",
+                                "name": "Paket Tryout 3 Bulan",
+                                "price": "150000",
+                                "priceCurrency": "IDR",
+                                "availability": "https://schema.org/InStock"
+                            }
+                        })
+                    }}
+                />
+            </head>
+            <body>
+                {children}
+                {/* Meta Pixel Code */}
+                <Script
+                    id="fb-pixel"
+                    strategy="afterInteractive"
                     dangerouslySetInnerHTML={{
                         __html: `
                             !function(f,b,e,v,n,t,s)
@@ -91,29 +117,7 @@ export default function RootLayout({
                         alt=""
                     />
                 </noscript>
-                {/* End Meta Pixel Code */}
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
-                            "@context": "https://schema.org",
-                            "@type": "EducationalOrganization",
-                            "name": "Polisimuda",
-                            "description": "Platform tryout online terpercaya untuk persiapan tes masuk Polisi dan Bintara Polri",
-                            "url": "https://polisimuda.com",
-                            "sameAs": [],
-                            "offers": {
-                                "@type": "Offer",
-                                "name": "Paket Tryout 3 Bulan",
-                                "price": "150000",
-                                "priceCurrency": "IDR",
-                                "availability": "https://schema.org/InStock"
-                            }
-                        })
-                    }}
-                />
-            </head>
-            <body>{children}</body>
+            </body>
         </html>
     )
 }
