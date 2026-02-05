@@ -12,7 +12,7 @@ type FlowState = 'idle' | 'auth' | 'checkout' | 'success'
 export default function Home() {
     const [isScrolled, setIsScrolled] = useState(false)
     const [flowState, setFlowState] = useState<FlowState>('idle')
-    const [userId, setUserId] = useState<string>('')
+    const [snapToken, setSnapToken] = useState<string>('')
 
     // Placeholder URLs - ganti dengan URL asli
     const WHATSAPP_URL = "https://wa.me/6285128012705?text=Halo%20Polisimuda%2C%20saya%20tertarik%20untuk%20berlangganan"
@@ -20,8 +20,8 @@ export default function Home() {
 
     // Handle auth success - move to checkout
     const handleAuthSuccess = (response: AuthResponse) => {
-        if (response.user) {
-            setUserId(response.user.id)
+        if (response.snapToken) {
+            setSnapToken(response.snapToken)
             setFlowState('checkout')
         }
     }
@@ -34,7 +34,7 @@ export default function Home() {
     // Handle close modal
     const handleCloseModal = () => {
         setFlowState('idle')
-        setUserId('')
+        setSnapToken('')
     }
 
     // Open auth modal
@@ -391,9 +391,9 @@ export default function Home() {
             />
 
             {/* Payment Checkout */}
-            {flowState === 'checkout' && (
+            {flowState === 'checkout' && snapToken && (
                 <PremiumCheckout
-                    userId={userId}
+                    snapToken={snapToken}
                     onPaymentSuccess={handlePaymentSuccess}
                     onClose={handleCloseModal}
                 />
