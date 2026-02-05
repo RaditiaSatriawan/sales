@@ -10,6 +10,16 @@ export default function PaymentSuccess({ redirectUrl = 'https://polisimuda.com/h
     const [countdown, setCountdown] = useState(5);
 
     useEffect(() => {
+        // Track Purchase event with Meta Pixel
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'Purchase', {
+                value: 150000,
+                currency: 'IDR',
+                content_name: 'Paket Premium 3 Bulan',
+                content_type: 'product'
+            });
+        }
+
         const timer = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
