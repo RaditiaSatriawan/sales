@@ -70,7 +70,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     const invoiceResponse = await getInvoiceToken();
 
                     if (invoiceResponse.success && invoiceResponse.token) {
-                        console.log(invoiceResponse.token)
                         resetForm();
                         onSuccess({
                             ...response,
@@ -92,7 +91,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         const invoiceResponse = await getInvoiceToken();
 
                         if (invoiceResponse.success && invoiceResponse.token) {
-                            console.log(invoiceResponse.token)
                             resetForm();
                             onSuccess({
                                 ...loginResponse,

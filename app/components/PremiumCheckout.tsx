@@ -34,35 +34,28 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
         const existingScript = document.querySelector(`script[src="${snapSrcUrl}"]`);
 
         if (existingScript) {
-            console.log('Snap script already loaded');
             if (window.snap) {
                 setSnapReady(true);
                 setIsLoading(false);
             } else {
                 existingScript.addEventListener('load', () => {
-                    console.log('Snap script loaded from existing');
                     setSnapReady(true);
                     setIsLoading(false);
                 });
             }
             return;
         }
-
-        console.log('Loading Snap script...');
         const script = document.createElement('script');
         script.src = snapSrcUrl;
         script.setAttribute('data-client-key', myMidtransClientKey);
         script.async = true;
 
         script.onload = () => {
-            console.log('Snap script loaded successfully');
-            console.log('window.snap available:', !!window.snap);
             setSnapReady(true);
             setIsLoading(false);
         };
 
         script.onerror = () => {
-            console.error('Failed to load Snap script');
             setError('Gagal memuat script pembayaran');
             setIsLoading(false);
         };
@@ -98,35 +91,26 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
     };
 
     const openMidtransPopup = () => {
-        console.log('openMidtransPopup called');
-        console.log('snapToken:', snapToken);
-        console.log('window.snap exists:', !!window.snap);
-
         if (typeof window !== 'undefined' && window.snap) {
-            console.log('Calling window.snap.pay with token:', snapToken);
             try {
                 window.snap.pay(snapToken, {
                     onSuccess: function(result) {
-                        console.log('Payment success:', result);
                         onPaymentSuccess();
                     },
                     onPending: function(result) {
-                        console.log('Payment pending:', result);
+                        // Payment pending
                     },
                     onError: function(result) {
-                        console.log('Payment error:', result);
                         setError('Pembayaran gagal, silakan coba lagi');
                     },
                     onClose: function() {
-                        console.log('Customer closed the popup without finishing the payment');
+                        // Customer closed the popup
                     }
                 });
             } catch (err) {
-                console.error('Error calling snap.pay:', err);
                 setError('Gagal membuka popup pembayaran: ' + err);
             }
         } else {
-            console.error('window.snap not available');
             setError('Midtrans Snap belum siap');
         }
     };
