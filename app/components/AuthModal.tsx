@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { register, login, googleAuth, AuthResponse } from '../services/api'
+import { register, login, getInvoiceToken, AuthResponse } from '../services/api'
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -65,15 +65,48 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
             if (isLogin) {
                 response = await login(email, password);
+
+                if (response.success) {
+                    const invoiceResponse = await getInvoiceToken();
+
+                    if (invoiceResponse.success && invoiceResponse.token) {
+                        console.log(invoiceResponse.token)
+                        resetForm();
+                        onSuccess({
+                            ...response,
+                            snapToken: invoiceResponse.token
+                        });
+                    } else {
+                        setError(invoiceResponse.error || 'Gagal mendapatkan token pembayaran');
+                    }
+                } else {
+                    setError(response.error || 'Terjadi kesalahan, coba lagi');
+                }
             } else {
                 response = await register(name, email, password);
-            }
 
-            if (response.success) {
-                resetForm();
-                onSuccess(response);
-            } else {
-                setError(response.error || 'Terjadi kesalahan, coba lagi');
+                if (response.success) {
+                    const loginResponse = await login(email, password);
+
+                    if (loginResponse.success) {
+                        const invoiceResponse = await getInvoiceToken();
+
+                        if (invoiceResponse.success && invoiceResponse.token) {
+                            console.log(invoiceResponse.token)
+                            resetForm();
+                            onSuccess({
+                                ...loginResponse,
+                                snapToken: invoiceResponse.token
+                            });
+                        } else {
+                            setError(invoiceResponse.error || 'Gagal mendapatkan token pembayaran');
+                        }
+                    } else {
+                        setError(loginResponse.error || 'Login otomatis gagal, silakan login manual');
+                    }
+                } else {
+                    setError(response.error || 'Terjadi kesalahan, coba lagi');
+                }
             }
         } catch (err) {
             setError('Gagal terhubung ke server');
@@ -82,23 +115,23 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         }
     };
 
-    const handleGoogleAuth = async () => {
-        setIsLoading(true);
-        setError('');
+    // const handleGoogleAuth = async () => {
+    //     setIsLoading(true);
+    //     setError('');
 
-        try {
-            const response = await googleAuth();
-            if (response.success) {
-                onSuccess(response);
-            } else {
-                setError(response.error || 'Gagal login dengan Google');
-            }
-        } catch (err) {
-            setError('Gagal terhubung ke Google');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    //     try {
+    //         const response = await googleAuth();
+    //         if (response.success) {
+    //             onSuccess(response);
+    //         } else {
+    //             setError(response.error || 'Gagal login dengan Google');
+    //         }
+    //     } catch (err) {
+    //         setError('Gagal terhubung ke Google');
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
 
     if (!isOpen) return null;
 
@@ -199,12 +232,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 </form>
 
                 {/* Divider */}
-                <div className="auth-divider">
+                {/* <div className="auth-divider">
                     <span>ATAU LANJUT DENGAN</span>
-                </div>
+                </div> */}
 
                 {/* Google Auth */}
-                <button
+                {/* <button
                     className="auth-google"
                     onClick={handleGoogleAuth}
                     disabled={isLoading}
@@ -216,7 +249,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                     </svg>
                     {isLogin ? 'Masuk dengan Google' : 'Daftar dengan Google'}
-                </button>
+                </button> */}
 
                 {/* Switch mode */}
                 <p className="auth-switch">
