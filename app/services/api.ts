@@ -1,9 +1,9 @@
 // API Service for Polisimuda
 // Base URL for API
-const API_BASE_URL = 'https://api.polisimuda.com';
+const API_BASE_URL = 'https://api.polisimuda.com/api/v1';
 
 // Set to true to use real API, false to use simulation
-const USE_REAL_API = false;
+const USE_REAL_API = true;
 
 export interface User {
     id: string;
@@ -15,6 +15,7 @@ export interface AuthResponse {
     success: boolean;
     user?: User;
     token?: string;
+    snapToken?: string;
     error?: string;
 }
 
@@ -26,6 +27,12 @@ export interface PaymentResponse {
     error?: string;
 }
 
+export interface InvoiceResponse {
+    success: boolean;
+    token?: string;
+    error?: string;
+}
+
 // Simulate API delay (only used for simulation mode)
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -34,16 +41,17 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // Endpoint: POST https://api.polisimuda.com/register
 // Body: { name, email, password }
 // ============================================
-export async function register(name: string, email: string, password: string): Promise<AuthResponse> {
+export async function register(displayName: string, email: string, password: string): Promise<AuthResponse> {
     if (USE_REAL_API) {
         try {
-            const response = await fetch(`${API_BASE_URL}/register`, {
+            const response = await fetch(`${API_BASE_URL}/users/register`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({ name, email, password })
+                body: JSON.stringify({ displayName, email, password })
             });
 
             const data = await response.json();
@@ -74,7 +82,7 @@ export async function register(name: string, email: string, password: string): P
         success: true,
         user: {
             id: 'user_' + Date.now(),
-            name: name,
+            name: displayName,
             email: email
         },
         token: 'mock_token_' + Date.now()
@@ -89,8 +97,9 @@ export async function register(name: string, email: string, password: string): P
 export async function login(email: string, password: string): Promise<AuthResponse> {
     if (USE_REAL_API) {
         try {
-            const response = await fetch(`${API_BASE_URL}/login`, {
+            const response = await fetch(`${API_BASE_URL}/users/login`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -233,6 +242,51 @@ export async function checkPaymentStatus(orderId: string, token?: string): Promi
     return {
         success: true,
         status: 'settlement'
+    };
+}
+
+// ============================================
+// GET INVOICE TOKEN API
+// Endpoint: POST https://api.polisimuda.com/invoices/bundles/premium/SALES50
+// Headers: Cookie (credentials: include)
+// ============================================
+export async function getInvoiceToken(): Promise<InvoiceResponse> {
+    if (USE_REAL_API) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/invoices/bundles/premium/SALES50`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                return {
+                    success: true,
+                    token: data.token
+                };
+            } else {
+                return {
+                    success: false,
+                    error: data.message || 'Gagal mendapatkan token pembayaran'
+                };
+            }
+        } catch (error) {
+            return {
+                success: false,
+                error: 'Gagal terhubung ke server'
+            };
+        }
+    }
+
+    // SIMULATION MODE
+    await delay(500);
+    return {
+        success: true,
+        token: 'mock_snap_token_' + Date.now()
     };
 }
 
