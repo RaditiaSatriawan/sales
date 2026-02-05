@@ -1,62 +1,134 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createPayment } from '../services/api'
 
 interface PremiumCheckoutProps {
-    userId: string;
+    snapToken: string;
     onPaymentSuccess: () => void;
     onClose: () => void;
 }
 
-export default function PremiumCheckout({ userId, onPaymentSuccess, onClose }: PremiumCheckoutProps) {
+declare global {
+    interface Window {
+        snap: {
+            pay: (token: string, options?: {
+                onSuccess?: (result: any) => void;
+                onPending?: (result: any) => void;
+                onError?: (result: any) => void;
+                onClose?: () => void;
+            }) => void;
+        };
+    }
+}
+
+export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }: PremiumCheckoutProps) {
     const [isLoading, setIsLoading] = useState(true);
-    const [paymentUrl, setPaymentUrl] = useState('');
-    const [orderId, setOrderId] = useState('');
     const [error, setError] = useState('');
+    const [snapReady, setSnapReady] = useState(false);
+    const [hasOpenedPopup, setHasOpenedPopup] = useState(false);
 
     useEffect(() => {
-        initializePayment();
+        const snapSrcUrl = 'https://app.midtrans.com/snap/snap.js';
+        const myMidtransClientKey = 'Mid-client-AUpJu60P3WfcNh5Y';
+
+        const existingScript = document.querySelector(`script[src="${snapSrcUrl}"]`);
+
+        if (existingScript) {
+            console.log('Snap script already loaded');
+            if (window.snap) {
+                setSnapReady(true);
+                setIsLoading(false);
+            } else {
+                existingScript.addEventListener('load', () => {
+                    console.log('Snap script loaded from existing');
+                    setSnapReady(true);
+                    setIsLoading(false);
+                });
+            }
+            return;
+        }
+
+        console.log('Loading Snap script...');
+        const script = document.createElement('script');
+        script.src = snapSrcUrl;
+        script.setAttribute('data-client-key', myMidtransClientKey);
+        script.async = true;
+
+        script.onload = () => {
+            console.log('Snap script loaded successfully');
+            console.log('window.snap available:', !!window.snap);
+            setSnapReady(true);
+            setIsLoading(false);
+        };
+
+        script.onerror = () => {
+            console.error('Failed to load Snap script');
+            setError('Gagal memuat script pembayaran');
+            setIsLoading(false);
+        };
+
+        document.body.appendChild(script);
+
+        // return empty function agar tidak reload saat cleanup
+        return () => {}
     }, []);
+
+    useEffect(() => {
+        if (snapReady && !hasOpenedPopup) {
+            setHasOpenedPopup(true);
+            setTimeout(() => {
+                openMidtransPopup();
+            }, 1000);
+        }
+    }, [snapReady, hasOpenedPopup]);
 
     const initializePayment = async () => {
         try {
-            const response = await createPayment(userId);
-
-            if (response.success && response.redirectUrl) {
-                setPaymentUrl(response.redirectUrl);
-                setOrderId(response.orderId || '');
+            if (typeof window !== 'undefined' && window.snap) {
                 setIsLoading(false);
-
-                // Auto-open Midtrans popup after 1.5 seconds
-                setTimeout(() => {
-                    // In production, this would open Midtrans Snap
-                    // window.snap.pay(response.snapToken, { ... })
-                    // For simulation, we show the link and auto-trigger success
-                    simulatePayment();
-                }, 1500);
+                openMidtransPopup();
             } else {
-                setError('Gagal membuat pembayaran');
+                setError('Midtrans belum siap, mohon refresh halaman');
                 setIsLoading(false);
             }
         } catch (err) {
-            setError('Gagal terhubung ke server');
+            setError('Gagal memuat pembayaran');
             setIsLoading(false);
         }
     };
 
-    const simulatePayment = () => {
-        // Simulate Midtrans payment process
-        // In production, Midtrans will handle this and call your callback
-        setTimeout(() => {
-            onPaymentSuccess();
-        }, 2000);
-    };
+    const openMidtransPopup = () => {
+        console.log('openMidtransPopup called');
+        console.log('snapToken:', snapToken);
+        console.log('window.snap exists:', !!window.snap);
 
-    const handleManualPayment = () => {
-        // In production, this would open the Midtrans URL
-        // window.open(paymentUrl, '_blank');
-        simulatePayment();
+        if (typeof window !== 'undefined' && window.snap) {
+            console.log('Calling window.snap.pay with token:', snapToken);
+            try {
+                window.snap.pay(snapToken, {
+                    onSuccess: function(result) {
+                        console.log('Payment success:', result);
+                        onPaymentSuccess();
+                    },
+                    onPending: function(result) {
+                        console.log('Payment pending:', result);
+                    },
+                    onError: function(result) {
+                        console.log('Payment error:', result);
+                        setError('Pembayaran gagal, silakan coba lagi');
+                    },
+                    onClose: function() {
+                        console.log('Customer closed the popup without finishing the payment');
+                    }
+                });
+            } catch (err) {
+                console.error('Error calling snap.pay:', err);
+                setError('Gagal membuka popup pembayaran: ' + err);
+            }
+        } else {
+            console.error('window.snap not available');
+            setError('Midtrans Snap belum siap');
+        }
     };
 
     return (
@@ -94,24 +166,33 @@ export default function PremiumCheckout({ userId, onPaymentSuccess, onClose }: P
                 {error && (
                     <div className="checkout-error">
                         <p>{error}</p>
-                        <button onClick={initializePayment}>Coba Lagi</button>
+                        <button onClick={openMidtransPopup}>Buka Pembayaran</button>
                     </div>
                 )}
 
                 {/* Payment info */}
-                {!isLoading && !error && (
+                {!isLoading && !error && snapReady && (
                     <div className="checkout-info">
                         <div className="checkout-card">
                             <p className="checkout-info-text">
-                                Jika tidak otomatis muncul, maka klik link ini:
+                                Popup pembayaran Midtrans telah dibuka. Jika tidak muncul, klik tombol di bawah:
                             </p>
-                            <a
-                                href="#"
+                            <button
                                 className="checkout-link"
-                                onClick={(e) => { e.preventDefault(); handleManualPayment(); }}
+                                onClick={openMidtransPopup}
+                                style={{
+                                    background: '#2563eb',
+                                    color: 'white',
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '16px',
+                                    fontWeight: '500'
+                                }}
                             >
-                                {paymentUrl}
-                            </a>
+                                Buka Pembayaran Midtrans
+                            </button>
                         </div>
 
                         {/* Price summary */}
