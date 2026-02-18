@@ -67,6 +67,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 response = await login(email, password);
 
                 if (response.success) {
+                    // Track CompleteRegistration (login)
+                    if (typeof window !== 'undefined' && (window as any).fbq) {
+                        (window as any).fbq('track', 'CompleteRegistration', {
+                            content_name: 'Login',
+                            status: true
+                        });
+                    }
+
                     const invoiceResponse = await getInvoiceToken();
 
                     if (invoiceResponse.success && invoiceResponse.token) {
@@ -85,6 +93,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 response = await register(name, email, password);
 
                 if (response.success) {
+                    // Track CompleteRegistration (register)
+                    if (typeof window !== 'undefined' && (window as any).fbq) {
+                        (window as any).fbq('track', 'CompleteRegistration', {
+                            content_name: 'Register',
+                            status: true
+                        });
+                    }
+
                     const loginResponse = await login(email, password);
 
                     if (loginResponse.success) {

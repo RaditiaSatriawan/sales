@@ -27,6 +27,20 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
     const [snapReady, setSnapReady] = useState(false);
     const [hasOpenedPopup, setHasOpenedPopup] = useState(false);
 
+    // Track InitiateCheckout when component mounts
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'InitiateCheckout', {
+                content_name: 'Paket Premium 3 Bulan',
+                content_category: 'Subscription',
+                content_type: 'product',
+                value: 150000,
+                currency: 'IDR',
+                num_items: 1
+            });
+        }
+    }, []);
+
     useEffect(() => {
         const snapSrcUrl = 'https://app.midtrans.com/snap/snap.js';
         const myMidtransClientKey = 'Mid-client-AUpJu60P3WfcNh5Y';
@@ -63,7 +77,7 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
         document.body.appendChild(script);
 
         // return empty function agar tidak reload saat cleanup
-        return () => {}
+        return () => { }
     }, []);
 
     useEffect(() => {
@@ -92,18 +106,28 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
 
     const openMidtransPopup = () => {
         if (typeof window !== 'undefined' && window.snap) {
+            // Track AddPaymentInfo when Midtrans popup opens
+            if ((window as any).fbq) {
+                (window as any).fbq('track', 'AddPaymentInfo', {
+                    content_name: 'Paket Premium 3 Bulan',
+                    content_category: 'Subscription',
+                    value: 150000,
+                    currency: 'IDR'
+                });
+            }
+
             try {
                 window.snap.pay(snapToken, {
-                    onSuccess: function(result) {
+                    onSuccess: function (result) {
                         onPaymentSuccess();
                     },
-                    onPending: function(result) {
+                    onPending: function (result) {
                         // Payment pending
                     },
-                    onError: function(result) {
+                    onError: function (result) {
                         setError('Pembayaran gagal, silakan coba lagi');
                     },
-                    onClose: function() {
+                    onClose: function () {
                         // Customer closed the popup
                     }
                 });

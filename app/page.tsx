@@ -47,11 +47,32 @@ export default function Home() {
         setSnapToken('')
     }
 
-    // Open auth modal
+    // Open auth modal + track AddToCart
     const handleBelajarSekarang = (e: React.MouseEvent) => {
         e.preventDefault()
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'AddToCart', {
+                content_name: 'Paket Premium 3 Bulan',
+                content_type: 'product',
+                value: 150000,
+                currency: 'IDR'
+            });
+        }
         setFlowState('auth')
     }
+
+    // Track ViewContent on page load
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'ViewContent', {
+                content_name: 'Landing Page - Polisimuda',
+                content_category: 'Sales Page',
+                content_type: 'product',
+                value: 150000,
+                currency: 'IDR'
+            });
+        }
+    }, [])
 
     // Scroll handler
     useEffect(() => {
