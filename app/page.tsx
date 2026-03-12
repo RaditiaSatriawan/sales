@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import AuthModal from "./components/AuthModal";
 import PaymentSuccess from "./components/PaymentSuccess";
 import PremiumCheckout from "./components/PremiumCheckout";
@@ -11,28 +11,38 @@ import { getInvoiceToken } from "./services/api";
 // Flow states
 type FlowState = "idle" | "auth" | "checkout" | "success";
 
+function GoogleOAuthHandler({
+	onSuccess,
+}: {
+	onSuccess: (token: string) => void;
+}) {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+
+	useEffect(() => {
+		if (searchParams.get("from") !== "google-oauth") return;
+
+		router.replace("/", { scroll: false });
+
+		getInvoiceToken().then((invoiceResponse) => {
+			if (invoiceResponse.success && invoiceResponse.token) {
+				onSuccess(invoiceResponse.token);
+			}
+		});
+	}, [searchParams, router, onSuccess]);
+
+	return null;
+}
+
 export default function Home() {
 	const [isScrolled, setIsScrolled] = useState(false);
 	const [flowState, setFlowState] = useState<FlowState>("idle");
 	const [snapToken, setSnapToken] = useState<string>("");
-	const searchParams = useSearchParams();
-	const router = useRouter();
 
-	// Handle Google OAuth redirect back to this page
-	useEffect(() => {
-		if (searchParams.get("from") !== "google-oauth") return;
-
-		// Clean the query param from the URL immediately
-		router.replace("/", { scroll: false });
-
-		// The server has already set the auth cookie — proceed to checkout
-		getInvoiceToken().then((invoiceResponse) => {
-			if (invoiceResponse.success && invoiceResponse.token) {
-				setSnapToken(invoiceResponse.token);
-				setFlowState("checkout");
-			}
-		});
-	}, [searchParams, router]);
+	const handleGoogleOAuthSuccess = (token: string) => {
+		setSnapToken(token);
+		setFlowState("checkout");
+	};
 
 	// Placeholder URLs - ganti dengan URL asli
 	const WHATSAPP_URL =
@@ -634,6 +644,10 @@ export default function Home() {
 			</div>
 
 			{/* ============ MODAL COMPONENTS ============ */}
+			<Suspense fallback={null}>
+				<GoogleOAuthHandler onSuccess={handleGoogleOAuthSuccess} />
+			</Suspense>
+
 			{/* Auth Modal */}
 			<AuthModal
 				isOpen={flowState === "auth"}
