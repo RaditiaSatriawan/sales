@@ -291,37 +291,25 @@ export async function getInvoiceToken(): Promise<InvoiceResponse> {
 }
 
 // ============================================
-// GOOGLE AUTH
-// Note: Requires OAuth implementation on backend
-// Endpoint: POST https://api.polisimuda.com/auth/google
+// GOOGLE OAUTH LOGIN
+// Endpoint: GET /users/login/google
+// Fetches the Google OAuth redirect URL and navigates to it.
+// The server will redirect back to the app with ?from=google-oauth
+// and set the auth cookie automatically.
 // ============================================
-export async function googleAuth(): Promise<AuthResponse> {
-    if (USE_REAL_API) {
-        // In production, this would redirect to Google OAuth
-        // and handle the callback on the backend
-        try {
-            // This is a simplified version - real implementation needs OAuth flow
-            window.location.href = `${API_BASE_URL}/auth/google`;
-            return { success: true }; // Will redirect
-        } catch (error) {
-            return {
-                success: false,
-                error: 'Gagal terhubung ke Google'
-            };
-        }
+export async function loginWithGoogle(): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/users/login/google`, {
+        method: 'GET',
+        credentials: 'include',
+    });
+
+    const data = await response.json();
+
+    if (response.status !== 200) {
+        throw new Error(data.error || 'Gagal mendapatkan URL Google OAuth');
     }
 
-    // SIMULATION MODE
-    await delay(2000);
-    return {
-        success: true,
-        user: {
-            id: 'google_user_' + Date.now(),
-            name: 'Google User',
-            email: 'user@gmail.com'
-        },
-        token: 'google_mock_token_' + Date.now()
-    };
+    window.location.href = data.url;
 }
 
 // ============================================

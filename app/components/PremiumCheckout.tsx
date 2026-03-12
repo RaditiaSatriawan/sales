@@ -174,7 +174,7 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
                 {error && (
                     <div className="checkout-error">
                         <p>{error}</p>
-                        <button onClick={openMidtransPopup}>Buka Pembayaran</button>
+                        <button type="button" onClick={openMidtransPopup}>Buka Pembayaran</button>
                     </div>
                 )}
 
@@ -186,6 +186,7 @@ export default function PremiumCheckout({ snapToken, onPaymentSuccess, onClose }
                                 Popup pembayaran Midtrans telah dibuka. Jika tidak muncul, klik tombol di bawah:
                             </p>
                             <button
+                            type="button"
                                 className="checkout-link"
                                 onClick={openMidtransPopup}
                                 style={{
